@@ -1,1 +1,22 @@
-spring.application.name: Steamz
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/steamz
+    username: postgres
+    password: 12345
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  logging:
+    level:
+      root: INFO
+      com.example.tma_warehouse.controllers.administrator: DEBUG
+
+  flyway:
+    locations: classpath:db/migration
