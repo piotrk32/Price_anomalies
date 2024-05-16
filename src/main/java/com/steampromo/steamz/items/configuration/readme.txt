@@ -1,0 +1,1 @@
+contains configuration file with beans configuration

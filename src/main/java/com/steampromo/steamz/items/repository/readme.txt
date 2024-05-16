@@ -1,0 +1,1 @@
+contains JDBC template based repository interface with implementations
