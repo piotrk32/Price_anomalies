@@ -1,6 +1,6 @@
 CREATE TYPE category_enum AS ENUM ('CASE');
 
-CREATE TABLE items (
+CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY,
     item_name VARCHAR(255) NOT NULL,
     lowest_price DOUBLE PRECISION NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE items (
     category category_enum NOT NULL
 );
 
-CREATE TABLE alerts (
+CREATE TABLE IF NOT EXISTS alerts (
     id UUID PRIMARY KEY,
     item_id UUID NOT NULL,
     date TIMESTAMP NOT NULL,
