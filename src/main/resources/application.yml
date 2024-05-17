@@ -13,9 +13,5 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  logging:
-    level:
-      root: INFO
-
   flyway:
     locations: classpath:migration
