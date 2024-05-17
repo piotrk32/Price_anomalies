@@ -7,16 +7,11 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create-drop
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  logging:
-    level:
-      root: INFO
-      com.example.tma_warehouse.controllers.administrator: DEBUG
-
   flyway:
-    locations: classpath:db/migration
+    locations: src\main\resources\db\migration
