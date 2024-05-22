@@ -13,8 +13,8 @@ public class MarketHashCaseNameHolder {
             "CS:GO%20Weapon%20Case",
             "CS:GO%20Weapon%20Case%202",
             "CS:GO%20Weapon%20Case%203",
-            "Clutch%20Case"
-//            "CS20%20Case",
+            "Clutch%20Case",
+            "CS20%20Case"
 //            "Danger%20Zone%20Case",
 //            "Dreams%20&%20Nightmares%20Case",
 //            "eSports%202013%20Case",

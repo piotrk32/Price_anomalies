@@ -220,7 +220,7 @@ public class ItemService {
     }
 
     private void insertNewItem(Item item) {
-        String sql = "INSERT INTO items (id, item_name, lowest_price, median_price, category) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (id, item_name, lowest_price, median_price, category) VALUES (?, ?, ?, ?, CAST(? AS category_enum))";
         jdbcTemplate.update(sql, item.getId(), item.getItemName(), item.getLowestPrice(), item.getMedianPrice(), item.getCategory().name());
     }
 
