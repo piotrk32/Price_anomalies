@@ -47,12 +47,8 @@ public class ItemService {
     private final JdbcTemplate jdbcTemplate;
     private final CustomItemRepository customItemRepository;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
-    private  RestTemplate restTemplate;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-
-    private static final int MAX_RETRIES = 3;
-
 
 
     public void checkPriceAnomaliesForCases() {
@@ -111,7 +107,7 @@ public class ItemService {
                             item.setMedianPrice(parsePrice(response.getMedianPrice()));
                             item.setCategory(CategoryEnum.CASE);
 
-                            customItemRepository.saveItemWithJdbc(item);  // Use the custom repository for JDBC operations
+                            customItemRepository.saveItemWithJdbc(item);
                         } else {
                             logger.error("API response indicates failure for marketHashName: {}", marketHashName);
                         }
