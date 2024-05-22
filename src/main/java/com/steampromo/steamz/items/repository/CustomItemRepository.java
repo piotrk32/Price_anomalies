@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface CustomItemRepository {
     void saveItemWithJdbc(Item item);
+
     List<Item> findAllItemsWithJdbc();
 }
