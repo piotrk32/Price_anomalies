@@ -7,7 +7,6 @@ import com.steampromo.steamz.items.domain.item.Item;
 import com.steampromo.steamz.items.domain.item.MarketHashCaseNameHolder;
 import com.steampromo.steamz.items.domain.item.PriceOverviewResponse;
 import com.steampromo.steamz.items.domain.item.enums.CategoryEnum;
-import com.steampromo.steamz.items.repository.CustomItemRepository;
 import com.steampromo.steamz.items.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -42,7 +41,6 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final JavaMailSender mailSender;
     private final JdbcTemplate jdbcTemplate;
-    private final CustomItemRepository customItemRepository;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -78,14 +76,13 @@ public class ItemService {
         for (String marketHashName : marketHashNames) {
             try {
                 fetchAndSaveSingleItem(marketHashName);
-                TimeUnit.SECONDS.sleep(1);  // Adding a small delay to avoid hitting rate limits
+                TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 logger.error("Interrupted while waiting between API calls", e);
-                break;  // Optional: break if interruption should stop the entire process
+                break;
             } catch (Exception e) {
                 logger.error("Error during fetching or saving for marketHashName: {}", marketHashName, e);
-                continue;  // Continue with the next marketHashName
             }
         }
     }
