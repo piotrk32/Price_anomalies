@@ -1,7 +1,6 @@
 package com.steampromo.steamz.items.service.item;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.steampromo.steamz.items.domain.alert.Alert;
 import com.steampromo.steamz.items.domain.item.Item;
@@ -15,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -24,13 +22,12 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -75,53 +72,31 @@ public class ItemService {
         }
     }
 
+    public void fetchAndSaveAllItems() {
+        List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
+
+        for (String marketHashName : marketHashNames) {
+            try {
+                fetchAndSaveSingleItem(marketHashName);
+                TimeUnit.SECONDS.sleep(1);  // Adding a small delay to avoid hitting rate limits
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Interrupted while waiting between API calls", e);
+                break;  // Optional: break if interruption should stop the entire process
+            } catch (Exception e) {
+                logger.error("Error during fetching or saving for marketHashName: {}", marketHashName, e);
+                continue;  // Continue with the next marketHashName
+            }
+        }
+    }
+
     public void fetchAndSaveSingleItem(String marketHashName) {
         try {
-            logger.info("Raw marketHashName: {}", marketHashName);
-            String encodedMarketHashName = URLEncoder.encode(marketHashName, "UTF-8");
-            logger.info("Encoded marketHashName: {}", encodedMarketHashName);
-
-            String urlString = "https://steamcommunity.com/market/priceoverview/?country=PL&currency=6&appid=730&market_hash_name=" + encodedMarketHashName;
-            URI uri = new URI(urlString);
+            URI uri = constructURI(marketHashName);
             RestTemplate restTemplate = new RestTemplate();
-
             logger.info("Fetching data from URL: {}", uri);
-
             ResponseEntity<String> responseEntity = restTemplate.getForEntity(uri, String.class);
-            String responseBody = responseEntity.getBody();
-            HttpHeaders headers = responseEntity.getHeaders();
-
-            logger.debug("Response body: {}", responseBody);
-            logger.debug("Response headers: {}", headers);
-
-            if (responseBody != null && responseEntity.getStatusCode().is2xxSuccessful()) {
-                if (headers.getContentType() != null && headers.getContentType().toString().contains("application/json")) {
-                    try {
-                        PriceOverviewResponse response = objectMapper.readValue(responseBody, PriceOverviewResponse.class);
-
-                        if (response.isSuccess()) {
-                            Item item = new Item();
-                            item.setId(UUID.randomUUID());
-                            item.setItemName(marketHashName);
-                            item.setLowestPrice(parsePrice(response.getLowestPrice()));
-                            item.setMedianPrice(parsePrice(response.getMedianPrice()));
-                            item.setCategory(CategoryEnum.CASE);
-
-                            customItemRepository.saveItemWithJdbc(item);
-                        } else {
-                            logger.error("API response indicates failure for marketHashName: {}", marketHashName);
-                        }
-                    } catch (JsonProcessingException e) {
-                        logger.error("Error processing JSON response for marketHashName: {}", marketHashName, e);
-                    }
-                } else {
-                    logger.error("Unexpected content type for marketHashName: {}. Content type: {}", marketHashName, headers.getContentType());
-                }
-            } else {
-                logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody);
-            }
-        } catch (URISyntaxException | UnsupportedEncodingException e) {
-            logger.error("Error constructing URL for marketHashName: {}", marketHashName, e);
+            processResponse(responseEntity, marketHashName);
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             logger.error("HTTP error occurred while fetching data for marketHashName: {}. Response: {}", marketHashName, e.getResponseBodyAsString(), e);
         } catch (Exception e) {
@@ -129,11 +104,55 @@ public class ItemService {
         }
     }
 
+    public URI constructURI(String marketHashName) throws Exception {
+        String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8.toString());
+        String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8.toString());
+        String baseUrl = "https://steamcommunity.com/market/priceoverview/";
+        String queryString = String.format("?country=PL&currency=6&appid=730&market_hash_name=%s", encodedMarketHashName);
+        return new URI(baseUrl + queryString);
+    }
+
+    private void processResponse(ResponseEntity<String> responseEntity, String marketHashName) {
+        String responseBody = responseEntity.getBody();
+        HttpHeaders headers = responseEntity.getHeaders();
+
+        logger.debug("Response body: {}", responseBody);
+        logger.debug("Response headers: {}", headers);
+
+        if (responseBody != null && responseEntity.getStatusCode().is2xxSuccessful()) {
+            if (headers.getContentType() != null && headers.getContentType().toString().contains("application/json")) {
+                try {
+                    PriceOverviewResponse response = objectMapper.readValue(responseBody, PriceOverviewResponse.class);
+
+                    if (response.isSuccess()) {
+                        saveItem(response, marketHashName);
+                    } else {
+                        logger.error("API response indicates failure for marketHashName: {}", marketHashName);
+                    }
+                } catch (JsonProcessingException e) {
+                    logger.error("Error processing JSON response for marketHashName: {}", marketHashName, e);
+                }
+            } else {
+                logger.error("Unexpected content type for marketHashName: {}. Content type: {}", marketHashName, headers.getContentType());
+            }
+        } else {
+            logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody);
+        }
+    }
+
+    private void saveItem(PriceOverviewResponse response, String marketHashName) {
+        Item item = new Item();
+        item.setId(UUID.randomUUID());
+        item.setItemName(marketHashName);
+        item.setLowestPrice(parsePrice(response.getLowestPrice()));
+        item.setMedianPrice(parsePrice(response.getMedianPrice()));
+        item.setCategory(CategoryEnum.CASE);
+        customItemRepository.saveItemWithJdbc(item);  // Use the custom repository for JDBC operations
+    }
+
     private double parsePrice(String price) {
         return Double.parseDouble(price.replaceAll("[^\\d,\\.]", "").replace(",", "."));
     }
-
-
 
     private boolean isAnomaly(double latestPrice, double medianPrice) {
         double priceGap = Math.abs(latestPrice - medianPrice);
@@ -175,4 +194,6 @@ public class ItemService {
         item.setCategory(CategoryEnum.valueOf(rs.getString("category")));
         return item;
     }
+
 }
+
