@@ -6,6 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
+
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor
@@ -22,16 +25,16 @@ public class ItemController {
     }
 
     @PostMapping("/fetch-and-save")
-    public String fetchAndSaveItem(@RequestParam String marketHashName) {
+    public String fetchAndSaveItem(@RequestParam String marketHashName) throws UnsupportedEncodingException, URISyntaxException {
         logger.info("Received request to fetch and save item with marketHashName: {}", marketHashName);
         itemService.fetchAndSaveSingleItem(marketHashName);
         return "Item fetch and save completed for: " + marketHashName;
     }
-//    @PostMapping("/fetch-and-save-all")
-//    public String fetchAndSaveAllItems() {
-//        logger.info("Received request to fetch and save all items");
-//        itemService.fetchAndSaveAllItems();
-//        return "Item fetch and save completed for all items";
-//    }
+    @PostMapping("/fetch-and-save-all")
+    public String fetchAndSaveAllItems() {
+        logger.info("Received request to fetch and save all items");
+        itemService.fetchAndSaveAllItems();
+        return "Item fetch and save completed for all items";
+    }
 
 }
