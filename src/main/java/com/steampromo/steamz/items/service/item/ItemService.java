@@ -1,25 +1,42 @@
 package com.steampromo.steamz.items.service.item;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.steampromo.steamz.items.domain.alert.Alert;
 import com.steampromo.steamz.items.domain.item.Item;
+import com.steampromo.steamz.items.domain.item.MarketHashCaseNameHolder;
 import com.steampromo.steamz.items.domain.item.PriceOverviewResponse;
 import com.steampromo.steamz.items.domain.item.enums.CategoryEnum;
 import com.steampromo.steamz.items.repository.CustomItemRepository;
 import com.steampromo.steamz.items.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +46,14 @@ public class ItemService {
     private final JavaMailSender mailSender;
     private final JdbcTemplate jdbcTemplate;
     private final CustomItemRepository customItemRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
+    private  RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+
+    private static final int MAX_RETRIES = 3;
+
+
 
     public void checkPriceAnomaliesForCases() {
         List<Item> items = itemRepository.findByCategory(CategoryEnum.CASE.name());
@@ -54,33 +79,65 @@ public class ItemService {
         }
     }
 
-    public void fetchAndSaveItem(String marketHashName) {
+    public void fetchAndSaveSingleItem(String marketHashName) {
         try {
+            logger.info("Raw marketHashName: {}", marketHashName);
             String encodedMarketHashName = URLEncoder.encode(marketHashName, "UTF-8");
-            String url = "https://steamcommunity.com/market/priceoverview/?country=PL&currency=6&appid=730&market_hash_name=" + encodedMarketHashName;
+            logger.info("Encoded marketHashName: {}", encodedMarketHashName);
+
+            String urlString = "https://steamcommunity.com/market/priceoverview/?country=PL&currency=6&appid=730&market_hash_name=" + encodedMarketHashName;
+            URI uri = new URI(urlString);
             RestTemplate restTemplate = new RestTemplate();
-            PriceOverviewResponse response = restTemplate.getForObject(url, PriceOverviewResponse.class);
 
-            if (response != null && response.isSuccess()) {
-                Item item = new Item();
-                item.setId(UUID.randomUUID());
-                item.setItemName(marketHashName);
-                item.setLowestPrice(parsePrice(response.getLowestPrice()));
-                item.setMedianPrice(parsePrice(response.getMedianPrice()));
-                item.setCategory(CategoryEnum.CASE);
+            logger.info("Fetching data from URL: {}", uri);
 
-                customItemRepository.saveItemWithJdbc(item);  // Use the custom repository for JDBC operations
+            ResponseEntity<String> responseEntity = restTemplate.getForEntity(uri, String.class);
+            String responseBody = responseEntity.getBody();
+            HttpHeaders headers = responseEntity.getHeaders();
+
+            logger.debug("Response body: {}", responseBody);
+            logger.debug("Response headers: {}", headers);
+
+            if (responseBody != null && responseEntity.getStatusCode().is2xxSuccessful()) {
+                if (headers.getContentType() != null && headers.getContentType().toString().contains("application/json")) {
+                    try {
+                        PriceOverviewResponse response = objectMapper.readValue(responseBody, PriceOverviewResponse.class);
+
+                        if (response.isSuccess()) {
+                            Item item = new Item();
+                            item.setId(UUID.randomUUID());
+                            item.setItemName(marketHashName);
+                            item.setLowestPrice(parsePrice(response.getLowestPrice()));
+                            item.setMedianPrice(parsePrice(response.getMedianPrice()));
+                            item.setCategory(CategoryEnum.CASE);
+
+                            customItemRepository.saveItemWithJdbc(item);  // Use the custom repository for JDBC operations
+                        } else {
+                            logger.error("API response indicates failure for marketHashName: {}", marketHashName);
+                        }
+                    } catch (JsonProcessingException e) {
+                        logger.error("Error processing JSON response for marketHashName: {}", marketHashName, e);
+                    }
+                } else {
+                    logger.error("Unexpected content type for marketHashName: {}. Content type: {}", marketHashName, headers.getContentType());
+                }
+            } else {
+                logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody);
             }
-        } catch (UnsupportedEncodingException e) {
-            // Handle the encoding exception
-            e.printStackTrace();
+        } catch (URISyntaxException | UnsupportedEncodingException e) {
+            logger.error("Error constructing URL for marketHashName: {}", marketHashName, e);
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            logger.error("HTTP error occurred while fetching data for marketHashName: {}. Response: {}", marketHashName, e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            logger.error("An unexpected error occurred while fetching data for marketHashName: {}", marketHashName, e);
         }
     }
 
     private double parsePrice(String price) {
-        // Remove all non-numeric characters (except for the decimal point)
         return Double.parseDouble(price.replaceAll("[^\\d,\\.]", "").replace(",", "."));
     }
+
+
 
     private boolean isAnomaly(double latestPrice, double medianPrice) {
         double priceGap = Math.abs(latestPrice - medianPrice);
