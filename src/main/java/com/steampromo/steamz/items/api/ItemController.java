@@ -24,7 +24,14 @@ public class ItemController {
     @PostMapping("/fetch-and-save")
     public String fetchAndSaveItem(@RequestParam String marketHashName) {
         logger.info("Received request to fetch and save item with marketHashName: {}", marketHashName);
-        itemService.fetchAndSaveItem(marketHashName);
+        itemService.fetchAndSaveSingleItem(marketHashName);
         return "Item fetch and save completed for: " + marketHashName;
     }
+//    @PostMapping("/fetch-and-save-all")
+//    public String fetchAndSaveAllItems() {
+//        logger.info("Received request to fetch and save all items");
+//        itemService.fetchAndSaveAllItems();
+//        return "Item fetch and save completed for all items";
+//    }
+
 }
