@@ -26,3 +26,6 @@ spring:
           auth: true
           starttls:
             enable: true
+app:
+  price-alert:
+    threshold: 0.01  # 1% difference
