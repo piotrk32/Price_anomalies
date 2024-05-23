@@ -45,31 +45,6 @@ public class ItemService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-
-    public void checkPriceAnomaliesForCases() {
-        List<Item> items = itemRepository.findByCategory(CategoryEnum.CASE.name());
-
-        for (Item item : items) {
-            String url = "https://steamcommunity.com/market/priceoverview/?country=NL&currency=3&appid=" + item.getId() + "&market_hash_name=" + item.getItemName();
-            RestTemplate restTemplate = new RestTemplate();
-            PriceOverviewResponse response = restTemplate.getForObject(url, PriceOverviewResponse.class);
-
-            if (response != null && response.isSuccess()) {
-                double latestPrice = parsePrice(response.getLowestPrice());
-                double medianPrice = parsePrice(response.getMedianPrice());
-
-                if (isAnomaly(latestPrice, medianPrice)) {
-                    createAlert(item, latestPrice, medianPrice);
-                    sendAlertEmail(item, latestPrice, medianPrice);
-                }
-
-                item.setLowestPrice(latestPrice);
-                item.setMedianPrice(medianPrice);
-                itemRepository.save(item);
-            }
-        }
-    }
-
     public void fetchAndSaveAllItems() {
         List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
 
