@@ -10,6 +10,7 @@ import com.steampromo.steamz.items.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,9 +35,19 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final JavaMailSender mailSender;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${steam.api.base-url}")
+    private String baseUrl;
+
+    @Value("${steam.api.country}")
+    private String country;
+
+    @Value("${steam.api.currency}")
+    private int currency;
+
+    @Value("${steam.api.appid}")
+    private int appid;
     public void fetchAndSaveAllItems() {
         List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
 
@@ -97,8 +108,8 @@ public class ItemService {
     public URI constructURI(String marketHashName) throws Exception {
         String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8);
         String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8);
-        String baseUrl = "https://steamcommunity.com/market/priceoverview/";
-        String queryString = String.format("?country=PL&currency=6&appid=730&market_hash_name=%s", encodedMarketHashName);
+        String queryString = String.format("?country=%s&currency=%d&appid=%d&market_hash_name=%s",
+                country, currency, appid, encodedMarketHashName);
         return new URI(baseUrl + queryString);
     }
 
@@ -112,7 +123,7 @@ public class ItemService {
                     PriceOverviewResponse response = objectMapper.readValue(responseBody, PriceOverviewResponse.class);
                     if (response.isSuccess()) {
                         saveItem(response, marketHashName);
-                        return true; // Indicate successful processing
+                        return true;
                     } else {
                         logger.error("API response indicates failure for marketHashName: {}", marketHashName);
                     }
@@ -125,7 +136,7 @@ public class ItemService {
         } else {
             logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody);
         }
-        return false; // Indicate failure to process response
+        return false;
     }
 
     private void saveItem(PriceOverviewResponse response, String marketHashName) {

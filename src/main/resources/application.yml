@@ -29,3 +29,10 @@ spring:
 app:
   price-alert:
     threshold: 0.01  # 1% difference
+steam:
+  api:
+    base-url: "https://steamcommunity.com/market/priceoverview/"
+    country: "NL"
+    currency: 6
+    appid: 730
+
