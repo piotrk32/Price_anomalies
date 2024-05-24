@@ -26,6 +26,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -34,8 +36,10 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final JavaMailSender mailSender;
+    private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Value("${steam.api.base-url}")
     private String baseUrl;
@@ -50,29 +54,27 @@ public class ItemService {
     private int appid;
     public void fetchAndSaveAllItems() {
         List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
-
+        int delay = 0;
         for (String marketHashName : marketHashNames) {
-            try {
-                fetchAndSaveSingleItem(marketHashName);
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.error("Interrupted while waiting between API calls", e);
-            } catch (Exception e) {
-                logger.error("Error during fetching or saving for marketHashName: {}", marketHashName, e);
-            }
+            scheduler.schedule(() -> {
+                try {
+                    fetchAndSaveSingleItem(marketHashName);
+                } catch (Exception e) {
+                    logger.error("Error during fetching or saving for marketHashName: {}", marketHashName, e);
+                }
+            }, delay, TimeUnit.SECONDS);
+            delay += 3;
         }
     }
 
     public Item fetchAndSaveSingleItem(String marketHashName) {
         int attempts = 0;
         int maxAttempts = 5;
-        long waitTimeInMillis = 1000;
+        long waitTimeInMillis = 3000;
 
         while (attempts < maxAttempts) {
             try {
                 URI uri = constructURI(marketHashName);
-                RestTemplate restTemplate = new RestTemplate();
                 logger.info("Fetching data from URL: {}", uri);
                 ResponseEntity<String> responseEntity = restTemplate.getForEntity(uri, String.class);
                 if (processResponse(responseEntity, marketHashName)) {
@@ -83,7 +85,7 @@ public class ItemService {
                 if (e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                     logger.error("Too many requests, retrying after {} ms", waitTimeInMillis);
                     waitAndRetry(waitTimeInMillis);
-                    waitTimeInMillis *= 2;
+                    waitTimeInMillis = Math.min(waitTimeInMillis * 2, 15000);
                     attempts++;
                 } else {
                     throw e;
