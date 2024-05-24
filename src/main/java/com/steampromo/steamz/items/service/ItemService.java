@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -34,7 +33,6 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final JavaMailSender mailSender;
-    private final JdbcTemplate jdbcTemplate;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -97,8 +95,8 @@ public class ItemService {
     }
 
     public URI constructURI(String marketHashName) throws Exception {
-        String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8.toString());
-        String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8.toString());
+        String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8);
+        String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8);
         String baseUrl = "https://steamcommunity.com/market/priceoverview/";
         String queryString = String.format("?country=PL&currency=6&appid=730&market_hash_name=%s", encodedMarketHashName);
         return new URI(baseUrl + queryString);
@@ -146,7 +144,7 @@ public class ItemService {
     }
 
     private double parsePrice(String price) {
-        return Double.parseDouble(price.replaceAll("[^\\d,\\.]", "").replace(",", "."));
+        return Double.parseDouble(price.replaceAll("[^\\d,.]", "").replace(",", "."));
     }
 
     private void sendAlertEmail(Item item, double latestPrice, double medianPrice) {
