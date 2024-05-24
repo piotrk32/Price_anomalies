@@ -1,5 +1,7 @@
 //package com.steampromo.steamz.items.service.item;
 //
+//import com.steampromo.steamz.items.domain.item.MarketHashCaseNameHolder;
+//import com.steampromo.steamz.items.service.alert.AlertSerivce;
 //import lombok.RequiredArgsConstructor;
 //import org.springframework.context.annotation.Configuration;
 //import org.springframework.scheduling.annotation.EnableScheduling;
@@ -12,17 +14,10 @@
 //
 //
 //    private final  ItemService itemService;
+//    private final AlertSerivce alertSerivce;
 //
 //    @Scheduled(fixedRate = 360) // every hour
 //    public void checkPriceAnomalies() {
-//        itemService.checkPriceAnomaliesForCases();
-//    }
-//
-//    @Scheduled(cron = "0 0 * * * ?") // Runs every hour
-//    public void fetchAndSaveItems() {
-//        String[] marketHashNames = {"Kilowatt Case"}; // Add more item names as needed
-//        for (String name : marketHashNames) {
-//            itemService.fetchAndSaveItem(name);
-//        }
+//        alertSerivce.checkPriceAnomaliesForCases();
 //    }
 //}
