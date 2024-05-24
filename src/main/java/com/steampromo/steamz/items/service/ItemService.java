@@ -78,22 +78,22 @@ public class ItemService {
                 if (processResponse(responseEntity, marketHashName)) {
                     return itemRepository.findItemByName(marketHashName);
                 }
-                break; // Exit loop on successful processing
+                break;
             } catch (HttpClientErrorException e) {
                 if (e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                     logger.error("Too many requests, retrying after {} ms", waitTimeInMillis);
                     waitAndRetry(waitTimeInMillis);
-                    waitTimeInMillis *= 2; // Exponential back-off
+                    waitTimeInMillis *= 2;
                     attempts++;
                 } else {
                     throw e;
                 }
             } catch (Exception e) {
                 logger.error("An unexpected error occurred while fetching data for marketHashName: {}", marketHashName, e);
-                return null; // Returning null to indicate failure
+                return null;
             }
         }
-        return null; // Return null if all attempts fail
+        return null;
     }
 
     private void waitAndRetry(long waitTimeInMillis) {
