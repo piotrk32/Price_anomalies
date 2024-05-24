@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -63,16 +64,36 @@ public class ItemService {
     }
 
     public void fetchAndSaveSingleItem(String marketHashName) {
-        try {
-            URI uri = constructURI(marketHashName);
-            RestTemplate restTemplate = new RestTemplate();
-            logger.info("Fetching data from URL: {}", uri);
-            ResponseEntity<String> responseEntity = restTemplate.getForEntity(uri, String.class);
-            processResponse(responseEntity, marketHashName);
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            logger.error("HTTP error occurred while fetching data for marketHashName: {}. Response: {}", marketHashName, e.getResponseBodyAsString(), e);
-        } catch (Exception e) {
-            logger.error("An unexpected error occurred while fetching data for marketHashName: {}", marketHashName, e);
+        int attempts = 0;
+        int maxAttempts = 5;
+        long waitTimeInMillis = 1000;
+
+        while (attempts < maxAttempts) {
+            try {
+                URI uri = constructURI(marketHashName);
+                RestTemplate restTemplate = new RestTemplate();
+                logger.info("Fetching data from URL: {}", uri);
+                ResponseEntity<String> responseEntity = restTemplate.getForEntity(uri, String.class);
+                processResponse(responseEntity, marketHashName);
+                break;
+            } catch (HttpClientErrorException e) {
+                if (e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                    logger.error("Too many requests, retrying after {} ms", waitTimeInMillis);
+                    try {
+                        Thread.sleep(waitTimeInMillis);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        logger.error("Thread interrupted during wait", ie);
+                    }
+                    waitTimeInMillis *= 2;
+                    attempts++;
+                } else {
+                    throw e;
+                }
+            } catch (Exception e) {
+                logger.error("An unexpected error occurred while fetching data for marketHashName: {}", marketHashName, e);
+                break;
+            }
         }
     }
 
@@ -113,15 +134,12 @@ public class ItemService {
     }
 
     private void saveItem(PriceOverviewResponse response, String marketHashName) {
-        // Check if the item already exists
         Item existingItem = findItemByName(marketHashName);
         if (existingItem != null) {
-            // Update existing item
             updateItem(existingItem, response);
         } else {
-            // Insert new item
             Item newItem = new Item();
-            newItem.setId(UUID.randomUUID());  // If you use a UUID as ID
+            newItem.setId(UUID.randomUUID());
             newItem.setItemName(marketHashName);
             newItem.setLowestPrice(parsePrice(response.getLowestPrice()));
             newItem.setMedianPrice(parsePrice(response.getMedianPrice()));
@@ -134,18 +152,6 @@ public class ItemService {
         return Double.parseDouble(price.replaceAll("[^\\d,\\.]", "").replace(",", "."));
     }
 
-    private boolean isAnomaly(double latestPrice, double medianPrice) {
-        double priceGap = Math.abs(latestPrice - medianPrice);
-        return (priceGap / medianPrice) > 0.01;
-    }
-
-    private void createAlert(Item item, double latestPrice, double medianPrice) {
-        Alert alert = new Alert();
-        alert.setItem(item);
-        alert.setDate(LocalDateTime.now());
-        alert.setPriceGap((int) ((latestPrice - medianPrice) * 100));
-        item.getAlerts().add(alert);
-    }
 
     private void sendAlertEmail(Item item, double latestPrice, double medianPrice) {
         SimpleMailMessage message = new SimpleMailMessage();
