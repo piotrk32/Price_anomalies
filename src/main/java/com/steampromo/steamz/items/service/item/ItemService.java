@@ -2,7 +2,6 @@ package com.steampromo.steamz.items.service.item;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.steampromo.steamz.items.domain.alert.Alert;
 import com.steampromo.steamz.items.domain.item.Item;
 import com.steampromo.steamz.items.domain.item.MarketHashCaseNameHolder;
 import com.steampromo.steamz.items.domain.item.PriceOverviewResponse;
@@ -19,18 +18,14 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -98,8 +93,8 @@ public class ItemService {
     }
 
     public URI constructURI(String marketHashName) throws Exception {
-        String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8.toString());
-        String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8.toString());
+        String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8);
+        String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8);
         String baseUrl = "https://steamcommunity.com/market/priceoverview/";
         String queryString = String.format("?country=PL&currency=6&appid=730&market_hash_name=%s", encodedMarketHashName);
         return new URI(baseUrl + queryString);
@@ -180,7 +175,6 @@ public class ItemService {
         item.setCategory(CategoryEnum.valueOf(rs.getString("category")));
         return item;
     }
-
 
 
     private Item findItemByName(String itemName) {

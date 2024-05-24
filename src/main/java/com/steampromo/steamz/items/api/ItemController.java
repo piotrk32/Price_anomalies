@@ -4,7 +4,10 @@ import com.steampromo.steamz.items.service.item.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
@@ -22,6 +25,7 @@ public class ItemController {
         itemService.fetchAndSaveSingleItem(marketHashName);
         return "Item fetch and save completed for: " + marketHashName;
     }
+
     @PostMapping("/fetch-and-save-all")
     public String fetchAndSaveAllItems() {
         logger.info("Received request to fetch and save all items");
