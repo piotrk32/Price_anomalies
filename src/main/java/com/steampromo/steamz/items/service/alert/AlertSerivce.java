@@ -66,14 +66,14 @@ public class AlertSerivce {
                 } catch (HttpClientErrorException.TooManyRequests e) {
                     logger.error("Too Many Requests: Retrying after delay...");
                     try {
-                        TimeUnit.SECONDS.sleep(10); // Sleep for 10 seconds before retrying
+                        TimeUnit.SECONDS.sleep(10);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                     }
                     retries--;
                 } catch (Exception e) {
                     logger.error("Error processing item: " + item.getItemName(), e);
-                    break; // break the loop on other exceptions
+                    break;
                 }
             }
             if (!success) {
@@ -101,7 +101,6 @@ public class AlertSerivce {
     }
 
     private double parsePrice(String priceStr) {
-        // Remove the currency symbol and replace comma with a decimal point for proper parsing
         priceStr = priceStr.replaceAll("zł", "").trim().replace(",", ".");
         return Double.parseDouble(priceStr);
     }
