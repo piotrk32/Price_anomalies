@@ -129,9 +129,9 @@ public class ItemService {
     }
 
     private void saveItem(PriceOverviewResponse response, String marketHashName) {
-        Item existingItem = findItemByName(marketHashName);
+        Item existingItem = itemRepository.findItemByName(marketHashName);
         if (existingItem != null) {
-            updateItem(existingItem, response);
+            itemRepository.updateItem(existingItem, response);
         } else {
             Item newItem = new Item();
             newItem.setId(UUID.randomUUID());
@@ -139,7 +139,7 @@ public class ItemService {
             newItem.setLowestPrice(parsePrice(response.getLowestPrice()));
             newItem.setMedianPrice(parsePrice(response.getMedianPrice()));
             newItem.setCategory(CategoryEnum.CASE);
-            insertNewItem(newItem);
+            itemRepository.insertNewItem(newItem);
         }
     }
 
@@ -156,45 +156,30 @@ public class ItemService {
         mailSender.send(message);
     }
 
-    public void save(Item item) {
-        String sql = "INSERT INTO items (id, item_name, lowest_price, median_price, category) VALUES (?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sql, item.getId(), item.getItemName(), item.getLowestPrice(), item.getMedianPrice(), item.getCategory().name());
-    }
+//    public void save(Item item) {
+//        String sql = "INSERT INTO items (id, item_name, lowest_price, median_price, category) VALUES (?, ?, ?, ?, ?)";
+//        jdbcTemplate.update(sql, item.getId(), item.getItemName(), item.getLowestPrice(), item.getMedianPrice(), item.getCategory().name());
+//    }
+//
+//    public List<Item> findAll() {
+//        String sql = "SELECT * FROM items";
+//        return jdbcTemplate.query(sql, this::mapRowToItem);
+//    }
 
-    public List<Item> findAll() {
-        String sql = "SELECT * FROM items";
-        return jdbcTemplate.query(sql, this::mapRowToItem);
-    }
-
-    private Item mapRowToItem(ResultSet rs, int rowNum) throws SQLException {
-        Item item = new Item();
-        item.setId(UUID.fromString(rs.getString("id")));
-        item.setItemName(rs.getString("item_name"));
-        item.setLowestPrice(rs.getDouble("lowest_price"));
-        item.setMedianPrice(rs.getDouble("median_price"));
-        item.setCategory(CategoryEnum.valueOf(rs.getString("category")));
-        return item;
-    }
+//    public Item mapRowToItem(ResultSet rs, int rowNum) throws SQLException {
+//        Item item = new Item();
+//        item.setId(UUID.fromString(rs.getString("id")));
+//        item.setItemName(rs.getString("item_name"));
+//        item.setLowestPrice(rs.getDouble("lowest_price"));
+//        item.setMedianPrice(rs.getDouble("median_price"));
+//        item.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+//        return item;
+//    }
 
 
-    private Item findItemByName(String itemName) {
-        String sql = "SELECT * FROM items WHERE item_name = ?";
-        List<Item> items = jdbcTemplate.query(sql, new Object[]{itemName}, this::mapRowToItem);
-        if (items.isEmpty()) {
-            return null;
-        }
-        return items.get(0);
-    }
 
-    private void updateItem(Item item, PriceOverviewResponse response) {
-        String sql = "UPDATE items SET lowest_price = ?, median_price = ? WHERE item_name = ?";
-        jdbcTemplate.update(sql, parsePrice(response.getLowestPrice()), parsePrice(response.getMedianPrice()), item.getItemName());
-    }
 
-    private void insertNewItem(Item item) {
-        String sql = "INSERT INTO items (id, item_name, lowest_price, median_price, category) VALUES (?, ?, ?, ?, CAST(? AS category_enum))";
-        jdbcTemplate.update(sql, item.getId(), item.getItemName(), item.getLowestPrice(), item.getMedianPrice(), item.getCategory().name());
-    }
+
 
 }
 
