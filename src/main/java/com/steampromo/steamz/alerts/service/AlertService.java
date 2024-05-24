@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
-public class AlertSerivce {
+public class AlertService {
 
     @Value("${app.price-alert.threshold}")
     private double threshold;
