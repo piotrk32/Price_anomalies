@@ -15,17 +15,15 @@ spring:
 
   flyway:
     locations: classpath:migration
-  mail:
-    host: poczta.o2.pl
-    port: 587
-    username: piotrk322@o2.pl
-    password: Dupacyce1
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+mail:
+  host: poczta.o2.pl
+  port: 587
+  username: piotrk322@o2.pl
+  password: Dupacyce1
+  smtp:
+    auth: true
+    starttls-enable: true
+    debug: true
 app:
   price-alert:
     threshold: 0.01  # 1% difference
