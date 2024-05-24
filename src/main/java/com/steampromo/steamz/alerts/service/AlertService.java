@@ -22,6 +22,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -34,51 +36,44 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final RestTemplate restTemplate;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
 
     public void checkPriceAnomaliesForCases() {
         List<Item> items = itemRepository.findByCategory(CategoryEnum.CASE.name());
+        int delay = 0;
         for (Item item : items) {
-            int retries = 3;
-            boolean success = false;
-            while (retries > 0 && !success) {
-                try {
-                    URI uri = constructURI(item.getItemName());
-                    String rawResponse = restTemplate.getForObject(uri, String.class);
-                    if (rawResponse != null && !rawResponse.isEmpty()) {
-                        logger.info("Raw API Response: {}", rawResponse);
+            scheduler.schedule(() -> processItemPriceCheck(item), delay, TimeUnit.SECONDS);
+            delay += 3;
+        }
+    }
 
-                        PriceOverviewResponse response = new ObjectMapper().readValue(rawResponse, PriceOverviewResponse.class);
-                        if (response.isSuccess()) {
-                            double latestPrice = parsePrice(response.getLowestPrice());
-                            logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}", latestPrice, item.getLowestPrice(), item.getItemName());
+    private void processItemPriceCheck(Item item) {
+        try {
+            URI uri = constructURI(item.getItemName());
+            String rawResponse = restTemplate.getForObject(uri, String.class);
+            if (rawResponse != null && !rawResponse.isEmpty()) {
+                logger.info("Raw API Response: {}", rawResponse);
 
-                            if (latestPrice < item.getLowestPrice() * (1 - threshold)) {
-                                createAlert(item, item.getLowestPrice(), latestPrice);
-                                logger.info("Alert created for item: {} with price anomaly detected.", item.getItemName());
-                            } else {
-                                logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł)", item.getItemName(), latestPrice, item.getLowestPrice());
-                            }
-                        }
-                        success = true;
+                PriceOverviewResponse response = new ObjectMapper().readValue(rawResponse, PriceOverviewResponse.class);
+                if (response.isSuccess()) {
+                    double latestPrice = parsePrice(response.getLowestPrice());
+                    logger.info("Comparing latest price: {} to database stored lowest price: {} for item: {}", latestPrice, item.getLowestPrice(), item.getItemName());
+
+                    if (latestPrice < item.getLowestPrice() * (1 - threshold)) {
+                        createAlert(item, item.getLowestPrice(), latestPrice);
+                        logger.info("Alert created for item: {} with price anomaly detected.", item.getItemName());
                     } else {
-                        logger.error("Empty or null response for item: {}", item.getItemName());
+                        logger.info("No significant price anomaly detected for item: {} (latest: {}, stored: {})", item.getItemName(), latestPrice, item.getLowestPrice());
                     }
-                } catch (HttpClientErrorException.TooManyRequests e) {
-                    logger.error("Too Many Requests: Retrying after delay...");
-                    try {
-                        TimeUnit.SECONDS.sleep(10);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                    retries--;
-                } catch (Exception e) {
-                    logger.error("Error processing item: " + item.getItemName(), e);
-                    break;
                 }
+            } else {
+                logger.error("Empty or null response for item: {}", item.getItemName());
             }
-            if (!success) {
-                logger.error("Failed to process item after retries: {}", item.getItemName());
-            }
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            logger.error("Too Many Requests: Retrying after delay...");
+        } catch (Exception e) {
+            logger.error("Error processing item: {}", item.getItemName(), e);
         }
     }
 
