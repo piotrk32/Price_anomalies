@@ -1,4 +1,4 @@
-package com.steampromo.steamz.items.domain.item;
+package com.steampromo.steamz.items.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;

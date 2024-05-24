@@ -1,7 +1,7 @@
 //package com.steampromo.steamz.items.service.item;
 //
-//import com.steampromo.steamz.items.domain.item.MarketHashCaseNameHolder;
-//import com.steampromo.steamz.items.service.alert.AlertSerivce;
+//import com.steampromo.steamz.items.domain.MarketHashCaseNameHolder;
+//import com.steampromo.steamz.alerts.service.AlertSerivce;
 //import lombok.RequiredArgsConstructor;
 //import org.springframework.context.annotation.Configuration;
 //import org.springframework.scheduling.annotation.EnableScheduling;

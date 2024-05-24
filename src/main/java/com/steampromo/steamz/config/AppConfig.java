@@ -1,6 +1,6 @@
-package com.steampromo.steamz.items.configuration;
+package com.steampromo.steamz.config;
 
-import com.steampromo.steamz.items.exception.CustomResponseErrorHandler;
+import com.steampromo.steamz.exceptions.CustomResponseErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;

@@ -1,6 +1,6 @@
-package com.steampromo.steamz.items.api;
+package com.steampromo.steamz.alerts.api;
 
-import com.steampromo.steamz.items.service.alert.AlertSerivce;
+import com.steampromo.steamz.alerts.service.AlertSerivce;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,6 +1,6 @@
 package com.steampromo.steamz.items.repository;
 
-import com.steampromo.steamz.items.domain.item.Item;
+import com.steampromo.steamz.items.domain.Item;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +14,7 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     @Query(value = "SELECT * FROM items WHERE category = CAST(:category AS category_enum)", nativeQuery = true)
     List<Item> findByCategory(@Param("category") String category);
+
 
 
 }

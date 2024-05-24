@@ -1,11 +1,11 @@
-package com.steampromo.steamz.items.service.item;
+package com.steampromo.steamz.items.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.steampromo.steamz.items.domain.item.Item;
-import com.steampromo.steamz.items.domain.item.MarketHashCaseNameHolder;
-import com.steampromo.steamz.items.domain.item.PriceOverviewResponse;
-import com.steampromo.steamz.items.domain.item.enums.CategoryEnum;
+import com.steampromo.steamz.items.domain.Item;
+import com.steampromo.steamz.items.domain.MarketHashCaseNameHolder;
+import com.steampromo.steamz.items.domain.PriceOverviewResponse;
+import com.steampromo.steamz.items.domain.enums.CategoryEnum;
 import com.steampromo.steamz.items.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

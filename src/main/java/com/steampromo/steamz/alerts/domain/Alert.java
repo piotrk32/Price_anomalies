@@ -1,7 +1,7 @@
-package com.steampromo.steamz.items.domain.alert;
+package com.steampromo.steamz.alerts.domain;
 
 
-import com.steampromo.steamz.items.domain.item.Item;
+import com.steampromo.steamz.items.domain.Item;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

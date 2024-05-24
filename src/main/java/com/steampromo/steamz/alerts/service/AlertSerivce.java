@@ -1,13 +1,13 @@
-package com.steampromo.steamz.items.service.alert;
+package com.steampromo.steamz.alerts.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.steampromo.steamz.items.domain.alert.Alert;
-import com.steampromo.steamz.items.domain.item.Item;
-import com.steampromo.steamz.items.domain.item.PriceOverviewResponse;
-import com.steampromo.steamz.items.domain.item.enums.CategoryEnum;
-import com.steampromo.steamz.items.repository.AlertRepository;
+import com.steampromo.steamz.alerts.domain.Alert;
+import com.steampromo.steamz.items.domain.Item;
+import com.steampromo.steamz.items.domain.PriceOverviewResponse;
+import com.steampromo.steamz.items.domain.enums.CategoryEnum;
+import com.steampromo.steamz.alerts.repository.AlertRepository;
 import com.steampromo.steamz.items.repository.ItemRepository;
-import com.steampromo.steamz.items.service.item.ItemService;
+import com.steampromo.steamz.items.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

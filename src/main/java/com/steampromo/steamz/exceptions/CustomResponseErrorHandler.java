@@ -1,4 +1,4 @@
-package com.steampromo.steamz.items.exception;
+package com.steampromo.steamz.exceptions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

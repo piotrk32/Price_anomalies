@@ -1,6 +1,6 @@
 package com.steampromo.steamz.items.api;
 
-import com.steampromo.steamz.items.service.item.ItemService;
+import com.steampromo.steamz.items.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.steampromo.steamz.items.configuration;
+package com.steampromo.steamz.alerts.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

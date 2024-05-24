@@ -1,6 +1,6 @@
-package com.steampromo.steamz.items.repository;
+package com.steampromo.steamz.alerts.repository;
 
-import com.steampromo.steamz.items.domain.alert.Alert;
+import com.steampromo.steamz.alerts.domain.Alert;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;

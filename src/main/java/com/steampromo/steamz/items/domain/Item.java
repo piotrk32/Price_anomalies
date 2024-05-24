@@ -1,7 +1,7 @@
-package com.steampromo.steamz.items.domain.item;
+package com.steampromo.steamz.items.domain;
 
-import com.steampromo.steamz.items.domain.alert.Alert;
-import com.steampromo.steamz.items.domain.item.enums.CategoryEnum;
+import com.steampromo.steamz.alerts.domain.Alert;
+import com.steampromo.steamz.items.domain.enums.CategoryEnum;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
