@@ -14,8 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -35,11 +33,11 @@ import java.util.concurrent.TimeUnit;
 public class ItemService {
 
     private final ItemRepository itemRepository;
-    private final JavaMailSender mailSender;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Value("${steam.api.base-url}")
     private String baseUrl;
@@ -160,13 +158,7 @@ public class ItemService {
         return Double.parseDouble(price.replaceAll("[^\\d,.]", "").replace(",", "."));
     }
 
-    private void sendAlertEmail(Item item, double latestPrice, double medianPrice) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo("piotrkepisty@example.com");
-        message.setSubject("Price Anomaly Detected");
-        message.setText("An anomaly was detected for item " + item.getItemName() + ". Latest price: " + latestPrice + ", Median price: " + medianPrice);
-        mailSender.send(message);
-    }
+
 
 }
 
