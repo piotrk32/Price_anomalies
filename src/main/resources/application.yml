@@ -15,22 +15,17 @@ spring:
 
   flyway:
     locations: classpath:migration
-mail:
-  host: poczta.o2.pl
-  port: 587
-  username: piotrk322@o2.pl
-  password: Dupacyce1
-  smtp:
-    auth: true
-    starttls-enable: true
-    debug: true
+
+sendgrid:
+  api-key: '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'  # Be sure to replace this with your actual SendGrid API key
+
 app:
   price-alert:
     threshold: 0.01  # 1% difference
+
 steam:
   api:
     base-url: "https://steamcommunity.com/market/priceoverview/"
-    country: "NL"
+    country: "PL"
     currency: 6
     appid: 730
-
