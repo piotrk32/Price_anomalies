@@ -1,6 +1,13 @@
 package com.steampromo.steamz.alerts.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import com.steampromo.steamz.alerts.domain.Alert;
 import com.steampromo.steamz.items.domain.Item;
 import com.steampromo.steamz.items.domain.PriceOverviewResponse;
@@ -13,9 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -35,6 +41,9 @@ public class AlertService {
     private final ItemRepository itemRepository;
     private final AlertRepository alertRepository;
     private final RestTemplate restTemplate;
+
+    @Value("${sendgrid.api-key}")
+    private String sendgridApiKey;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -51,29 +60,54 @@ public class AlertService {
     private void processItemPriceCheck(Item item) {
         try {
             URI uri = constructURI(item.getItemName());
+            logger.info("Sending request for URI: {}", uri);
             String rawResponse = restTemplate.getForObject(uri, String.class);
             if (rawResponse != null && !rawResponse.isEmpty()) {
                 logger.info("Raw API Response: {}", rawResponse);
-
                 PriceOverviewResponse response = new ObjectMapper().readValue(rawResponse, PriceOverviewResponse.class);
                 if (response.isSuccess()) {
                     double latestPrice = parsePrice(response.getLowestPrice());
-                    logger.info("Comparing latest price: {} to database stored lowest price: {} for item: {}", latestPrice, item.getLowestPrice(), item.getItemName());
+                    double storedPrice = item.getLowestPrice();
+                    double priceDifference = Math.abs(storedPrice - latestPrice);
+                    double thresholdAmount = storedPrice * threshold;
 
-                    if (latestPrice < item.getLowestPrice() * (1 - threshold)) {
-                        createAlert(item, item.getLowestPrice(), latestPrice);
-                        logger.info("Alert created for item: {} with price anomaly detected.", item.getItemName());
+                    logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Threshold for alert: {}", latestPrice, storedPrice, item.getItemName(), thresholdAmount);
+
+                    if (priceDifference >= thresholdAmount) {
+                        Alert alert = createAlert(item, storedPrice, latestPrice);
+                        sendAlertEmail(alert);
+                        logger.info("Alert created and email sent for item: {} with price anomaly detected. Price gap: {}", item.getItemName(), priceDifference);
                     } else {
-                        logger.info("No significant price anomaly detected for item: {} (latest: {}, stored: {})", item.getItemName(), latestPrice, item.getLowestPrice());
+                        logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł, difference: {} zł, threshold: {} zł)", item.getItemName(), latestPrice, storedPrice, priceDifference, thresholdAmount);
                     }
                 }
             } else {
                 logger.error("Empty or null response for item: {}", item.getItemName());
             }
-        } catch (HttpClientErrorException.TooManyRequests e) {
-            logger.error("Too Many Requests: Retrying after delay...");
         } catch (Exception e) {
-            logger.error("Error processing item: {}", item.getItemName(), e);
+            logger.error("Error processing price check for item: {}", item.getItemName(), e);
+        }
+    }
+
+
+
+    private void sendAlertEmail(Alert alert) {
+        Email from = new Email("piotrk322@o2.pl");
+        Email to = new Email("piotrkepisty@gmail.com"); // Replace with dynamic recipient if needed
+        String subject = "Price Alert for " + alert.getItem().getItemName();
+        Content content = new Content("text/plain", "A price drop has been detected for " + alert.getItem().getItemName() + ". Price gap: " + alert.getPriceGap() + "%.");
+        Mail mail = new Mail(from, subject, to, content);
+
+        SendGrid sg = new SendGrid(sendgridApiKey);
+        Request request = new Request();
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            Response response = sg.api(request);
+            logger.info("Email sent status code: {}", response.getStatusCode());
+        } catch (IOException ex) {
+            logger.error("Error sending email for alert: {}", alert.getItem().getItemName(), ex);
         }
     }
 
@@ -85,7 +119,7 @@ public class AlertService {
         return new URI(baseUrl + queryString);
     }
 
-    private void createAlert(Item item, double dbLowestPrice, double latestPrice) {
+    private Alert createAlert(Item item, double dbLowestPrice, double latestPrice) {
         Alert alert = new Alert();
         alert.setItem(item);
         alert.setDate(LocalDateTime.now());
@@ -93,6 +127,7 @@ public class AlertService {
         alert.setPriceGap(priceGap);
         alertRepository.save(alert);
         logger.info("Alert saved for item: {} with price gap of {}%", item.getItemName(), priceGap);
+        return alert;
     }
 
     private double parsePrice(String priceStr) {
