@@ -1,7 +1,11 @@
+
 spring:
   datasource:
+    #To set
     url: jdbc:postgresql://localhost:5432/steamz
+    #To set
     username: postgres
+    #To set
     password: 12345
     driver-class-name: org.postgresql.Driver
 
@@ -17,19 +21,25 @@ spring:
     locations: classpath:migration
 
 sendgrid:
-  api-key: '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'  # Be sure to replace this with your actual SendGrid API key
+  api-key: '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'  # Be sure to replace this with your actual SendGrid API key#To set
 
 app:
   price-alert:
+    #To set
     threshold: 0.01  # 1% difference
 
 steam:
   api:
     base-url: "https://steamcommunity.com/market/priceoverview/"
+    #To set
     country: "PL"
+    #To set
     currency: 6
+    #To set
     appid: 730
 
 mail:
+  #To set
   emailSource: 'piotrk322@o2.pl'
+  #To set
   emailDestination: 'piotrkepisty@gmail.com'
