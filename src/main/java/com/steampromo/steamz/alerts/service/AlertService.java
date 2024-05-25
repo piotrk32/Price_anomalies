@@ -93,7 +93,7 @@ public class AlertService {
 
     private void sendAlertEmail(Alert alert) {
         Email from = new Email("piotrk322@o2.pl");
-        Email to = new Email("piotrkepisty@gmail.com"); // Replace with dynamic recipient if needed
+        Email to = new Email("piotrkepisty@gmail.com");
         String subject = "Price Alert for " + alert.getItem().getItemName();
         Content content = new Content("text/plain", "A price drop has been detected for " + alert.getItem().getItemName() + ". Price gap: " + alert.getPriceGap() + "%.");
         Mail mail = new Mail(from, subject, to, content);
