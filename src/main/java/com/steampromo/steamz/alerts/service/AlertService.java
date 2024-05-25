@@ -94,13 +94,13 @@ public class AlertService {
         }
     }
 
-
-
     private void sendAlertEmail(Alert alert) {
+        String decodedItemName = decodeItemName(alert.getItem().getItemName());
         Email from = new Email(emailSource);
         Email to = new Email(emailDestination);
-        String subject = "Price Alert for " + alert.getItem().getItemName();
-        Content content = new Content("text/plain", "A price drop has been detected for " + alert.getItem().getItemName() + ". Price gap: " + alert.getPriceGap() + "%.");
+        String subject = "Price Alert for " + decodedItemName;
+        String emailContent = String.format("A price drop has been detected for %s. Price gap: %d%%.", decodedItemName, alert.getPriceGap());
+        Content content = new Content("text/plain", emailContent);
         Mail mail = new Mail(from, subject, to, content);
 
         SendGrid sg = new SendGrid(sendgridApiKey);
@@ -112,8 +112,12 @@ public class AlertService {
             Response response = sg.api(request);
             logger.info("Email sent status code: {}", response.getStatusCode());
         } catch (IOException ex) {
-            logger.error("Error sending email for alert: {}", alert.getItem().getItemName(), ex);
+            logger.error("Error sending email for alert: {}", decodedItemName, ex);
         }
+    }
+
+    private String decodeItemName(String encodedName) {
+        return URLDecoder.decode(encodedName, StandardCharsets.UTF_8);
     }
 
     public URI constructURI(String marketHashName) throws Exception {
