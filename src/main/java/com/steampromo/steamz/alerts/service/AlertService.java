@@ -49,6 +49,15 @@ public class AlertService {
     private String emailSource;
     @Value("${mail.emailDestination}")
     private String emailDestination;
+
+    @Value("${steam.api.country}")
+    private String country;
+
+    @Value("${steam.api.currency}")
+    private int currency;
+
+    @Value("${steam.api.appid}")
+    private int appid;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -73,17 +82,16 @@ public class AlertService {
                 if (response.isSuccess()) {
                     double latestPrice = parsePrice(response.getLowestPrice());
                     double storedPrice = item.getLowestPrice();
-                    double priceDifference = Math.abs(storedPrice - latestPrice);
-                    double thresholdAmount = storedPrice * threshold;
+                    double priceDifference = storedPrice - latestPrice;
 
-                    logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Threshold for alert: {}", latestPrice, storedPrice, item.getItemName(), thresholdAmount);
+                    logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Price difference needed: {} zł", latestPrice, storedPrice, item.getItemName(), storedPrice * threshold);
 
-                    if (priceDifference >= thresholdAmount) {
+                    if (latestPrice < storedPrice && priceDifference >= storedPrice * threshold) {
                         Alert alert = createAlert(item, storedPrice, latestPrice);
                         sendAlertEmail(alert);
-                        logger.info("Alert created and email sent for item: {} with price anomaly detected. Price gap: {}", item.getItemName(), priceDifference);
+                        logger.info("Alert created and email sent for item: {} with price anomaly detected. Price difference: {} zł", item.getItemName(), priceDifference);
                     } else {
-                        logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł, difference: {} zł, threshold: {} zł)", item.getItemName(), latestPrice, storedPrice, priceDifference, thresholdAmount);
+                        logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł, difference: {} zł)", item.getItemName(), latestPrice, storedPrice, priceDifference);
                     }
                 }
             } else {
@@ -93,6 +101,7 @@ public class AlertService {
             logger.error("Error processing price check for item: {}", item.getItemName(), e);
         }
     }
+
 
     private void sendAlertEmail(Alert alert) {
         String decodedItemName = decodeItemName(alert.getItem().getItemName());
@@ -124,7 +133,8 @@ public class AlertService {
         String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8);
         String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8);
         String baseUrl = "https://steamcommunity.com/market/priceoverview/";
-        String queryString = String.format("?country=NL&currency=6&appid=730&market_hash_name=%s", encodedMarketHashName);
+        String queryString = String.format("?country=%s&currency=%d&appid=%d&market_hash_name=%s",
+                country, currency, appid, encodedMarketHashName);
         return new URI(baseUrl + queryString);
     }
 
@@ -132,7 +142,8 @@ public class AlertService {
         Alert alert = new Alert();
         alert.setItem(item);
         alert.setDate(LocalDateTime.now());
-        int priceGap = (int) ((dbLowestPrice - latestPrice) / dbLowestPrice * 100);
+        // Calculate the absolute value of the percentage difference
+        int priceGap = Math.abs((int) ((dbLowestPrice - latestPrice) / dbLowestPrice * 100));
         alert.setPriceGap(priceGap);
         alertRepository.save(alert);
         logger.info("Alert saved for item: {} with price gap of {}%", item.getItemName(), priceGap);
