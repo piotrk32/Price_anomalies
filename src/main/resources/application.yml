@@ -39,7 +39,6 @@ steam:
     appid: 730
 
 mail:
-  #To set
   emailSource: 'piotrk322@o2.pl'
   #To set
   emailDestination: 'piotrkepisty@gmail.com'
