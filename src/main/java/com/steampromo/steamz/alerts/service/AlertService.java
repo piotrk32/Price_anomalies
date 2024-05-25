@@ -44,6 +44,11 @@ public class AlertService {
 
     @Value("${sendgrid.api-key}")
     private String sendgridApiKey;
+
+    @Value("${mail.emailSource}")
+    private String emailSource;
+    @Value("${mail.emailDestination}")
+    private String emailDestination;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -92,8 +97,8 @@ public class AlertService {
 
 
     private void sendAlertEmail(Alert alert) {
-        Email from = new Email("piotrk322@o2.pl");
-        Email to = new Email("piotrkepisty@gmail.com");
+        Email from = new Email(emailSource);
+        Email to = new Email(emailDestination);
         String subject = "Price Alert for " + alert.getItem().getItemName();
         Content content = new Content("text/plain", "A price drop has been detected for " + alert.getItem().getItemName() + ". Price gap: " + alert.getPriceGap() + "%.");
         Mail mail = new Mail(from, subject, to, content);

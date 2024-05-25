@@ -29,3 +29,7 @@ steam:
     country: "PL"
     currency: 6
     appid: 730
+
+mail:
+  emailSource: 'piotrk322@o2.pl'
+  emailDestination: 'piotrkepisty@gmail.com'
