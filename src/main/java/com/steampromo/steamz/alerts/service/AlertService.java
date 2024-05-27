@@ -15,7 +15,10 @@ import com.steampromo.steamz.items.domain.enums.CategoryEnum;
 import com.steampromo.steamz.alerts.repository.AlertRepository;
 import com.steampromo.steamz.items.repository.ItemRepository;
 import com.steampromo.steamz.items.service.ItemService;
+import com.steampromo.steamz.proxy.ProxyService;
 import lombok.RequiredArgsConstructor;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +44,7 @@ public class AlertService {
     private final ItemRepository itemRepository;
     private final AlertRepository alertRepository;
     private final RestTemplate restTemplate;
+    private final ProxyService proxyService;
 
     @Value("${sendgrid.api-key}")
     private String sendgridApiKey;
@@ -67,40 +71,75 @@ public class AlertService {
         int delay = 0;
         for (Item item : items) {
             scheduler.schedule(() -> processItemPriceCheck(item), delay, TimeUnit.SECONDS);
-            delay += 3;
+            delay += 10;
         }
     }
 
     private void processItemPriceCheck(Item item) {
-        try {
-            URI uri = constructURI(item.getItemName());
-            logger.info("Sending request for URI: {}", uri);
-            String rawResponse = restTemplate.getForObject(uri, String.class);
-            if (rawResponse != null && !rawResponse.isEmpty()) {
-                logger.info("Raw API Response: {}", rawResponse);
-                PriceOverviewResponse response = new ObjectMapper().readValue(rawResponse, PriceOverviewResponse.class);
-                if (response.isSuccess()) {
-                    double latestPrice = parsePrice(response.getLowestPrice());
-                    double storedPrice = item.getLowestPrice();
-                    double priceDifference = storedPrice - latestPrice;
+        int retries = 0;
+        int maxRetries = 5;
+        long retryDelay = 1000;
 
-                    logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Price difference needed: {} zł", latestPrice, storedPrice, item.getItemName(), storedPrice * threshold);
+        while (retries <= maxRetries) {
+            try {
+                URI uri = constructURI(item.getItemName());
+                logger.info("Sending request for URI: {}", uri);
 
-                    if (latestPrice < storedPrice && priceDifference >= storedPrice * threshold) {
-                        Alert alert = createAlert(item, storedPrice, latestPrice);
-                        sendAlertEmail(alert);
-                        logger.info("Alert created and email sent for item: {} with price anomaly detected. Price difference: {} zł", item.getItemName(), priceDifference);
-                    } else {
-                        logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł, difference: {} zł)", item.getItemName(), latestPrice, storedPrice, priceDifference);
+                HttpResponse response = proxyService.executeRequest(uri.toString());
+                int statusCode = response.getStatusLine().getStatusCode();
+                String responseBody = EntityUtils.toString(response.getEntity());
+
+                logger.info("Response Status Code: {}", statusCode);
+                logger.info("Raw API Response: {}", responseBody);
+
+                if (statusCode == 200) {
+                    handleSuccessfulResponse(item, responseBody);
+                    break;
+                } else {
+                    logger.error("Received HTTP {} error from server for item: {}", statusCode, item.getItemName());
+                    if (statusCode == 500) {
+                        long adjustedDelay = retryDelay * (retries + 1);  // Exponential backoff
+                        Thread.sleep(adjustedDelay);
+                        logger.info("Retrying after delay of {}ms due to server error.", adjustedDelay);
                     }
+                    retries++;
                 }
-            } else {
-                logger.error("Empty or null response for item: {}", item.getItemName());
+            } catch (IOException e) {
+                logger.error("Attempt {} failed for item: {}, error: {}", retries, item.getItemName(), e.getMessage());
+                if (retries == maxRetries) {
+                    logger.error("Max retries reached for item: {}", item.getItemName());
+                    break;
+                }
+                retryDelay *= 2;
+                retries++;
+            } catch (Exception e) {
+                logger.error("Unexpected error during the price check for item: {}, Message: {}", item.getItemName(), e.getMessage(), e);
+                break;
             }
-        } catch (Exception e) {
-            logger.error("Error processing price check for item: {}", item.getItemName(), e);
         }
     }
+
+    private void handleSuccessfulResponse(Item item, String responseBody) throws IOException {
+        PriceOverviewResponse parsedResponse = new ObjectMapper().readValue(responseBody, PriceOverviewResponse.class);
+        if (parsedResponse.isSuccess()) {
+            double latestPrice = parsePrice(parsedResponse.getLowestPrice());
+            double storedPrice = item.getLowestPrice();
+            double priceDifference = Math.abs(storedPrice - latestPrice);
+
+            logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Price difference needed: {} zł", latestPrice, storedPrice, item.getItemName(), storedPrice * threshold);
+
+            if (latestPrice < storedPrice && priceDifference >= storedPrice * threshold) {
+                Alert alert = createAlert(item, storedPrice, latestPrice);
+                sendAlertEmail(alert);
+                logger.info("Alert created and email sent for item: {} with price anomaly detected. Price difference: {} zł", item.getItemName(), priceDifference);
+            } else {
+                logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł, difference: {} zł)", item.getItemName(), latestPrice, storedPrice, priceDifference);
+            }
+        } else {
+            logger.error("API response was not successful for item: {}", item.getItemName());
+        }
+    }
+
 
 
     private void sendAlertEmail(Alert alert) {
@@ -108,7 +147,12 @@ public class AlertService {
         Email from = new Email(emailSource);
         Email to = new Email(emailDestination);
         String subject = "Price Alert for " + decodedItemName;
-        String emailContent = String.format("A price drop has been detected for %s. Price gap: %d%%.", decodedItemName, alert.getPriceGap());
+
+        String itemUrl = String.format("https://steamcommunity.com/market/listings/%d/%s", appid, URLEncoder.encode(decodedItemName, StandardCharsets.UTF_8).replace("+", "%20"));
+
+        String emailContent = String.format("A price drop has been detected for %s. Price gap: %d%%. See more details: %s",
+                decodedItemName, alert.getPriceGap(), itemUrl);
+
         Content content = new Content("text/plain", emailContent);
         Mail mail = new Mail(from, subject, to, content);
 
@@ -142,7 +186,7 @@ public class AlertService {
         Alert alert = new Alert();
         alert.setItem(item);
         alert.setDate(LocalDateTime.now());
-        // Calculate the absolute value of the percentage difference
+
         int priceGap = Math.abs((int) ((dbLowestPrice - latestPrice) / dbLowestPrice * 100));
         alert.setPriceGap(priceGap);
         alertRepository.save(alert);
