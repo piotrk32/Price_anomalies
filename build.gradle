@@ -51,6 +51,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'com.sendgrid:sendgrid-java:4.7.2'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
 
 
 
