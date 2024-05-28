@@ -20,8 +20,8 @@ spring:
   flyway:
     locations: classpath:migration
 
-sendgrid:
-  api-key: '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'  # Be sure to replace this with your actual SendGrid API key#To set
+#sendgrid:
+#  api-key: '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'  # Be sure to replace this with your actual SendGrid API key#To set
 
 app:
   price-alert:
