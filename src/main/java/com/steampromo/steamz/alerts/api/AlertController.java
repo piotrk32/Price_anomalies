@@ -14,7 +14,7 @@ public class AlertController {
     private final AlertFacade alertFacade;
 
     @PostMapping("/check-prices")
-    public String checkItemPrices() {
+    public String checkItemsPrices() {
         alertFacade.checkForPriceAnomalies();
         return "Price check initiated and alerts creation in progress.";
     }

@@ -6,8 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 @RequiredArgsConstructor
 public class ItemFacade {
@@ -15,12 +13,12 @@ public class ItemFacade {
     private final ItemService itemService;
     private static final Logger logger = LoggerFactory.getLogger(ItemFacade.class);
 
-    public void fetchAndSaveAllItems() {
-        itemService.fetchAndSaveAllItems();
+    public void saveAllItemsData() {
+        itemService.saveAllItemsData();
     }
 
-    public Item fetchAndSaveItem(String marketHashName) {
-        return itemService.fetchAndSaveSingleItem(marketHashName);
+    public Item saveSingleItemData(String marketHashName) {
+        return itemService.saveSingleItemData(marketHashName);
     }
 
 }

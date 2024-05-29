@@ -50,13 +50,13 @@ public class ItemService {
 
     @Value("${steam.api.appid}")
     private int appid;
-    public void fetchAndSaveAllItems() {
+    public void saveAllItemsData() {
         List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
         int delay = 0;
         for (String marketHashName : marketHashNames) {
             scheduler.schedule(() -> {
                 try {
-                    fetchAndSaveSingleItem(marketHashName);
+                    saveSingleItemData(marketHashName);
                 } catch (Exception e) {
                     logger.error("Error during fetching or saving for marketHashName: {}", marketHashName, e);
                 }
@@ -65,7 +65,7 @@ public class ItemService {
         }
     }
 
-    public Item fetchAndSaveSingleItem(String marketHashName) {
+    public Item saveSingleItemData(String marketHashName) {
         int attempts = 0;
         int maxAttempts = 5;
         long waitTimeInMillis = 3000;

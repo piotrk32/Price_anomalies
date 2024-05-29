@@ -20,16 +20,16 @@ public class ItemController {
     private static final Logger logger = LoggerFactory.getLogger(ItemController.class);
 
     @PostMapping("/fetch-and-save")
-    public String fetchAndSaveItem(@RequestParam String marketHashName) {
+    public String saveSingleItemData(@RequestParam String marketHashName) {
         logger.info("Received request to fetch and save item with marketHashName: {}", marketHashName);
-        itemFacade.fetchAndSaveItem(marketHashName);
+        itemFacade.saveSingleItemData(marketHashName);
         return "Item fetch and save completed for: " + marketHashName;
     }
 
     @PostMapping("/fetch-and-save-all")
-    public String fetchAndSaveAllItems() {
+    public String saveAllItemsData() {
         logger.info("Received request to fetch and save all items");
-        itemFacade.fetchAndSaveAllItems();
+        itemFacade.saveAllItemsData();
         return "Item fetch and save completed for all items";
     }
 }
