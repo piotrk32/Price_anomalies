@@ -74,18 +74,18 @@ public class ProxyService {
                 HttpGet request = new HttpGet(url);
                 RequestConfig config = RequestConfig.custom()
                         .setProxy(proxy)
-                        .setConnectTimeout(3000) // Set timeout to 3 seconds
-                        .setSocketTimeout(3000) // Set socket timeout to 3 seconds
+                        .setConnectTimeout(3000)
+                        .setSocketTimeout(3000)
                         .build();
                 request.setConfig(config);
 
                 CloseableHttpResponse response = httpClient.execute(request);
                 int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode >= 200 && statusCode < 300) { // Check for HTTP OK status codes
+                if (statusCode >= 200 && statusCode < 300) {
                     return new ProxyResponse(response, proxy);
                 } else {
                     logger.error("HTTP Error: {} for proxy {}", statusCode, proxy);
-                    response.close(); // Close the response to avoid resource leak
+                    response.close();
                 }
             } catch (IOException e) {
                 logger.error("Attempt {} failed using proxy {}: {}", attempts + 1, proxy, e.getMessage());
