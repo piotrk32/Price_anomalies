@@ -16,20 +16,11 @@ public class ItemFacade {
     private static final Logger logger = LoggerFactory.getLogger(ItemFacade.class);
 
     public void fetchAndSaveAllItems() {
-        try {
-            itemService.fetchAndSaveAllItems();
-        } catch (Exception e) {
-            logger.error("Error in fetching and saving all items", e);
-        }
+        itemService.fetchAndSaveAllItems();
     }
 
     public Item fetchAndSaveItem(String marketHashName) {
-        try {
-            return itemService.fetchAndSaveSingleItem(marketHashName);
-        } catch (Exception e) {
-            logger.error("Error in fetching and saving item for marketHashName: {}", marketHashName, e);
-            return null;
-        }
+        return itemService.fetchAndSaveSingleItem(marketHashName);
     }
 
 }

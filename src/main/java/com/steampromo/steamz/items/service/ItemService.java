@@ -125,16 +125,16 @@ public class ItemService {
                         saveItem(response, marketHashName);
                         return true;
                     } else {
-                        logger.error("API response indicates failure for marketHashName: {}", marketHashName);
+                        logger.error("API response indicates failure for marketHashName: {}", marketHashName); // Added logger here
                     }
                 } catch (JsonProcessingException e) {
-                    logger.error("Error processing JSON response for marketHashName: {}", marketHashName, e);
+                    logger.error("Error processing JSON response for marketHashName: {}", marketHashName, e); // Added logger here
                 }
             } else {
-                logger.error("Unexpected content type for marketHashName: {}. Content type: {}", marketHashName, headers.getContentType());
+                logger.error("Unexpected content type for marketHashName: {}. Content type: {}", marketHashName, headers.getContentType()); // Added logger here
             }
         } else {
-            logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody);
+            logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody); // Added logger here
         }
         return false;
     }

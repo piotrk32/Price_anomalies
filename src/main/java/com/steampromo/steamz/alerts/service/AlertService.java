@@ -71,16 +71,21 @@ public class AlertService {
 
 
     public void checkPriceAnomaliesForCases() {
-        List<Item> items = itemRepository.findByCategory(CategoryEnum.CASE.name());
-        for (Item item : items) {
-            executorService.submit(() -> processItemPriceCheck(item));
+        try {
+            logger.info("Initiating check for price anomalies for cases.");
+            List<Item> items = itemRepository.findByCategory(CategoryEnum.CASE.name());
+            for (Item item : items) {
+                executorService.submit(() -> processItemPriceCheck(item));
+            }
+        } catch (Exception e) {
+            logger.error("Error during price anomaly check: {}", e.getMessage(), e);
         }
     }
 
     private void processItemPriceCheck(Item item) {
         int retries = 0;
-        int maxRetries = 3;  // Reduced max retries
-        long retryDelay = 500;  // Reduced initial delay
+        int maxRetries = 3;
+        long retryDelay = 500;
 
         while (retries <= maxRetries) {
             try {
@@ -111,7 +116,7 @@ public class AlertService {
                 break;
             }
             try {
-                Thread.sleep(retryDelay);  // Apply delay before retrying
+                Thread.sleep(retryDelay);
                 retryDelay *= 2;
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
