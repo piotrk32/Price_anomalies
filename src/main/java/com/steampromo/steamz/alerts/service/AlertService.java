@@ -33,6 +33,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -187,6 +188,7 @@ public class AlertService {
 
     private Alert createAlert(Item item, double dbLowestPrice, double latestPrice) {
         Alert alert = new Alert();
+        alert.setId(UUID.randomUUID()); // Ensure the UUID is generated and set here
         alert.setItem(item);
         alert.setDate(LocalDateTime.now());
 
