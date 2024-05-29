@@ -112,7 +112,7 @@ public class AlertService {
             }
             try {
                 Thread.sleep(retryDelay);  // Apply delay before retrying
-                retryDelay *= 2;  // Exponential backoff
+                retryDelay *= 2;
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
             }
