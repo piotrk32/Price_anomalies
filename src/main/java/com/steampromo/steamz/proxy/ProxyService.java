@@ -33,15 +33,34 @@ public class ProxyService {
         this.proxies = new ArrayList<>();
         this.random = new Random();
 
+//-------------------------------
+
+//        proxies.add(new HttpHost("129.226.193.16", 3128));
+//        proxies.add(new HttpHost("154.127.240.115", 64001));
+//        proxies.add(new HttpHost("220.233.27.127", 80));
+//        proxies.add(new HttpHost("206.1.65.12", 3128));
+//        proxies.add(new HttpHost("185.255.45.241", 8080));
+//        proxies.add(new HttpHost("165.16.59.225", 8080));
+//        proxies.add(new HttpHost("203.205.9.105", 8080));
+//----------------------------------------
+
+        proxies.add(new HttpHost("20.37.207.8", 8080, "http"));
+        proxies.add(new HttpHost("87.247.186.40", 1080, "http"));
+        proxies.add(new HttpHost("185.217.136.67", 1337, "http"));
+        proxies.add(new HttpHost("205.201.49.167", 53281, "http"));
+        proxies.add(new HttpHost("35.185.196.38", 3128, "http"));
+        proxies.add(new HttpHost("172.96.117.205", 38001, "http"));
+        proxies.add(new HttpHost("94.198.220.17", 8443, "http"));
 
 
-        proxies.add(new HttpHost("129.226.193.16", 3128));
-        proxies.add(new HttpHost("154.127.240.115", 64001));
-        proxies.add(new HttpHost("220.233.27.127", 80));
-        proxies.add(new HttpHost("206.1.65.12", 3128));
-        proxies.add(new HttpHost("185.255.45.241", 8080));
-        proxies.add(new HttpHost("165.16.59.225", 8080));
-        proxies.add(new HttpHost("203.205.9.105", 8080));
+
+
+
+
+
+
+
+
 
 
 
