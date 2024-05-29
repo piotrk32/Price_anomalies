@@ -7,13 +7,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PriceOverviewResponse {
     private boolean success;
     @JsonProperty("lowest_price")
     private String lowestPrice;
-    @JsonIgnoreProperties
-    private String volume;
     @JsonProperty("median_price")
-    private String medianPrice;
-}
+    private String medianPrice; }
 
