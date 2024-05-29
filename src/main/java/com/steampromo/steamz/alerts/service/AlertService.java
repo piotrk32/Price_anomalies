@@ -130,7 +130,7 @@ public class AlertService {
 
             if (latestPrice < storedPrice && priceDifference >= storedPrice * threshold) {
                 Alert alert = createAlert(item, storedPrice, latestPrice);
-                sendAlertEmail(alert);
+//                sendAlertEmail(alert);
                 logger.info("Alert created and email sent for item: {} with price anomaly detected. Price difference: {} zł", item.getItemName(), priceDifference);
             } else {
                 logger.info("No significant price anomaly detected for item: {} (latest: {} zł, stored: {} zł, difference: {} zł)", item.getItemName(), latestPrice, storedPrice, priceDifference);
