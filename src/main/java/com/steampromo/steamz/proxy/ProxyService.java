@@ -33,31 +33,21 @@ public class ProxyService {
         this.proxies = new ArrayList<>();
         this.random = new Random();
 
-        proxies.add(new HttpHost("3.11.218.78", 80));
-        proxies.add(new HttpHost("3.12.178.169", 80));
-        proxies.add(new HttpHost("3.19.97.90", 80));
-        proxies.add(new HttpHost("3.23.115.89", 3128));
-        proxies.add(new HttpHost("3.24.58.156", 3128));
-        proxies.add(new HttpHost("3.24.178.81", 80));
-        proxies.add(new HttpHost("3.35.217.104", 4000));
-        proxies.add(new HttpHost("3.37.125.76", 3128));
-        proxies.add(new HttpHost("3.68.124.231", 80));
-        proxies.add(new HttpHost("3.73.120.104", 3128));
-        proxies.add(new HttpHost("3.78.78.151", 3127));
-        proxies.add(new HttpHost("3.82.74.254", 80));
-        proxies.add(new HttpHost("3.93.71.36", 80));
-        proxies.add(new HttpHost("3.111.188.36", 80));
-        proxies.add(new HttpHost("3.122.84.99", 3128));
-        proxies.add(new HttpHost("3.127.121.101", 80));
-        proxies.add(new HttpHost("3.128.32.232", 80));
-        proxies.add(new HttpHost("3.128.142.113", 80));
 
+
+        proxies.add(new HttpHost("129.226.193.16", 3128));
+        proxies.add(new HttpHost("154.127.240.115", 64001));
+        proxies.add(new HttpHost("220.233.27.127", 80));
+        proxies.add(new HttpHost("206.1.65.12", 3128));
+        proxies.add(new HttpHost("185.255.45.241", 8080));
+        proxies.add(new HttpHost("165.16.59.225", 8080));
+        proxies.add(new HttpHost("203.205.9.105", 8080));
 
 
 
     }
 
-    public CloseableHttpResponse executeRequest(String url) throws IOException {
+    public ProxyResponse executeRequest(String url) throws IOException {
         int attempts = 0;
         while (attempts < proxies.size()) {
             HttpHost proxy = getNextProxy();
@@ -65,22 +55,21 @@ public class ProxyService {
                 HttpGet request = new HttpGet(url);
                 RequestConfig config = RequestConfig.custom()
                         .setProxy(proxy)
-                        .setConnectTimeout(5000) // Set timeout to 5 seconds
-                        .setSocketTimeout(5000) // Set socket timeout to 5 seconds
+                        .setConnectTimeout(3000) // Set timeout to 3 seconds
+                        .setSocketTimeout(3000) // Set socket timeout to 3 seconds
                         .build();
                 request.setConfig(config);
 
                 CloseableHttpResponse response = httpClient.execute(request);
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode >= 200 && statusCode < 300) { // Check for HTTP OK status codes
-                    return response;
+                    return new ProxyResponse(response, proxy);
                 } else {
                     logger.error("HTTP Error: {} for proxy {}", statusCode, proxy);
                     response.close(); // Close the response to avoid resource leak
                 }
             } catch (IOException e) {
                 logger.error("Attempt {} failed using proxy {}: {}", attempts + 1, proxy, e.getMessage());
-                // Optionally, you could check here if the error is a connection timeout and decide to retry immediately
             }
             attempts++;
             if (attempts >= proxies.size()) {
