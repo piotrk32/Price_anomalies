@@ -15,8 +15,10 @@ import com.steampromo.steamz.items.domain.enums.CategoryEnum;
 import com.steampromo.steamz.alerts.repository.AlertRepository;
 import com.steampromo.steamz.items.repository.ItemRepository;
 import com.steampromo.steamz.items.service.ItemService;
+import com.steampromo.steamz.proxy.ProxyResponse;
 import com.steampromo.steamz.proxy.ProxyService;
 import lombok.RequiredArgsConstructor;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -64,57 +67,54 @@ public class AlertService {
     private int appid;
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
 
     public void checkPriceAnomaliesForCases() {
         List<Item> items = itemRepository.findByCategory(CategoryEnum.CASE.name());
-        int delay = 0;
         for (Item item : items) {
-            scheduler.schedule(() -> processItemPriceCheck(item), delay, TimeUnit.SECONDS);
-            delay += 10;
+            executorService.submit(() -> processItemPriceCheck(item));
         }
     }
 
     private void processItemPriceCheck(Item item) {
         int retries = 0;
-        int maxRetries = 5;
-        long retryDelay = 1000;
+        int maxRetries = 3;  // Reduced max retries
+        long retryDelay = 500;  // Reduced initial delay
 
         while (retries <= maxRetries) {
             try {
                 URI uri = constructURI(item.getItemName());
                 logger.info("Sending request for URI: {}", uri);
 
-                HttpResponse response = proxyService.executeRequest(uri.toString());
+                ProxyResponse proxyResponse = proxyService.executeRequest(uri.toString());
+                HttpResponse response = proxyResponse.getResponse();
+                HttpHost proxy = proxyResponse.getProxy();
                 int statusCode = response.getStatusLine().getStatusCode();
                 String responseBody = EntityUtils.toString(response.getEntity());
 
-                logger.info("Response Status Code: {}", statusCode);
+                logger.info("Response Status Code: {} using proxy: {}", statusCode, proxy);
                 logger.info("Raw API Response: {}", responseBody);
 
                 if (statusCode == 200) {
                     handleSuccessfulResponse(item, responseBody);
                     break;
                 } else {
-                    logger.error("Received HTTP {} error from server for item: {}", statusCode, item.getItemName());
-                    if (statusCode == 500) {
-                        long adjustedDelay = retryDelay * (retries + 1);  // Exponential backoff
-                        Thread.sleep(adjustedDelay);
-                        logger.info("Retrying after delay of {}ms due to server error.", adjustedDelay);
-                    }
+                    logger.error("Received HTTP {} error from server for item: {} using proxy: {}", statusCode, item.getItemName(), proxy);
                     retries++;
                 }
             } catch (IOException e) {
                 logger.error("Attempt {} failed for item: {}, error: {}", retries, item.getItemName(), e.getMessage());
-                if (retries == maxRetries) {
-                    logger.error("Max retries reached for item: {}", item.getItemName());
-                    break;
-                }
-                retryDelay *= 2;
                 retries++;
             } catch (Exception e) {
                 logger.error("Unexpected error during the price check for item: {}, Message: {}", item.getItemName(), e.getMessage(), e);
                 break;
+            }
+            try {
+                Thread.sleep(retryDelay);  // Apply delay before retrying
+                retryDelay *= 2;  // Exponential backoff
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -139,8 +139,6 @@ public class AlertService {
             logger.error("API response was not successful for item: {}", item.getItemName());
         }
     }
-
-
 
     private void sendAlertEmail(Alert alert) {
         String decodedItemName = decodeItemName(alert.getItem().getItemName());
