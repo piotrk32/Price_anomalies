@@ -2,6 +2,8 @@ package com.steampromo.steamz.items.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.steampromo.steamz.items.configuration.ItemProperties;
+import com.steampromo.steamz.items.configuration.SteamProperties;
 import com.steampromo.steamz.items.domain.Item;
 import com.steampromo.steamz.items.domain.MarketHashCaseNameHolder;
 import com.steampromo.steamz.items.domain.PriceOverviewResponse;
@@ -10,7 +12,6 @@ import com.steampromo.steamz.items.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,27 +33,16 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class ItemService {
 
+    public static final String COUNTRY = "country";
+    public static final String CURRENCY = "currency";
+
     private final ItemRepository itemRepository;
     private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-    @Value("${steam.api.base-url}")
-    private String baseUrl;
-    @Value("${steam.api.country}")
-    private String country;
-    @Value("${steam.api.currency}")
-    private int currency;
-    @Value("${steam.api.appid}")
-    private int appid;
-
-    @Value("${app.itemRateLimit.attempts}")
-    private int attempts;
-    @Value("${app.itemRateLimit.maxAttempts}")
-    private int maxAttempts;
-    @Value("${app.itemRateLimit.waitTimeInMillis}")
-    private int waitTimeInMillis;
+    private final SteamProperties steamProperties;
+    private final ItemProperties itemProperties;
 
     public void saveAllItemsData() {
         List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
@@ -70,6 +60,10 @@ public class ItemService {
     }
 
     public Item saveSingleItemData(String marketHashName) {
+        int attempts = itemProperties.getAttempts();
+        int maxAttempts = itemProperties.getMaxAttempts();
+        int waitTimeInMillis = itemProperties.getWaitTimeInMillis();
+
         while (attempts < maxAttempts) {
             try {
                 URI uri = constructURI(marketHashName);
@@ -108,9 +102,9 @@ public class ItemService {
     public URI constructURI(String marketHashName) throws Exception {
         String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8);
         String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8);
-        String queryString = String.format("?country=%s&currency=%d&appid=%d&market_hash_name=%s",
-                country, currency, appid, encodedMarketHashName);
-        return new URI(baseUrl + queryString);
+        String queryString = String.format("?%s=%s&%s=%s&appid=%d&market_hash_name=%s",
+                COUNTRY, steamProperties.getCountry(), CURRENCY, steamProperties.getCurrency(), steamProperties.getAppId(), encodedMarketHashName);
+        return new URI(steamProperties.getBaseUrl() + queryString);
     }
 
     private boolean processResponse(ResponseEntity<String> responseEntity, String marketHashName) {
@@ -164,8 +158,5 @@ public class ItemService {
     private double parsePrice(String price) {
         return Double.parseDouble(price.replaceAll("[^\\d,.]", "").replace(",", "."));
     }
-
-
-
 }
 

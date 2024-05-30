@@ -8,7 +8,9 @@ import com.sendgrid.SendGrid;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
+import com.steampromo.steamz.alerts.configuration.AlertProperties;
 import com.steampromo.steamz.alerts.domain.Alert;
+import com.steampromo.steamz.items.configuration.SteamProperties;
 import com.steampromo.steamz.items.domain.Item;
 import com.steampromo.steamz.items.domain.PriceOverviewResponse;
 import com.steampromo.steamz.items.domain.enums.CategoryEnum;
@@ -23,9 +25,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -36,40 +36,18 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 @Service
 @RequiredArgsConstructor
 public class AlertService {
 
-    @Value("${app.price-alert.threshold}")
-    private double threshold;
     private final ItemRepository itemRepository;
     private final AlertRepository alertRepository;
-    private final RestTemplate restTemplate;
     private final ProxyService proxyService;
-
-    @Value("${sendgrid.api-key}")
-    private String sendgridApiKey;
-    @Value("${mail.emailSource}")
-    private String emailSource;
-    @Value("${mail.emailDestination}")
-    private String emailDestination;
-    @Value("${steam.api.country}")
-    private String country;
-    @Value("${steam.api.currency}")
-    private int currency;
-    @Value("${steam.api.appid}")
-    private int appid;
-    @Value("${app.alertRateLimit.retries}")
-    private int retries;
-    @Value("${app.alertRateLimit.maxRetries}")
-    private int maxRetries;
-    @Value("${app.alertRateLimit.retryDelay}")
-    private long retryDelay;
+    private final AlertProperties alertProperties;
+    private final SteamProperties steamProperties;
 
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     public void checkPriceAnomaliesForCases() {
@@ -85,6 +63,10 @@ public class AlertService {
     }
 
     private void processItemPriceCheck(Item item) {
+        int retries = alertProperties.getRetries();
+        int maxRetries = alertProperties.getMaxRetries();
+        long retryDelay = alertProperties.getRetryDelay();
+
         while (retries <= maxRetries) {
             try {
                 URI uri = constructURI(item.getItemName());
@@ -129,9 +111,9 @@ public class AlertService {
             double storedPrice = item.getLowestPrice();
             double priceDifference = Math.abs(storedPrice - latestPrice);
 
-            logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Price difference needed: {} zł", latestPrice, storedPrice, item.getItemName(), storedPrice * threshold);
+            logger.info("Comparing latest price: {} zł to database stored lowest price: {} zł for item: {}. Price difference needed: {} zł", latestPrice, storedPrice, item.getItemName(), storedPrice * alertProperties.getThreshold());
 
-            if (latestPrice < storedPrice && priceDifference >= storedPrice * threshold) {
+            if (latestPrice < storedPrice && priceDifference >= storedPrice * alertProperties.getThreshold()) {
                 Alert alert = createAlert(item, storedPrice, latestPrice);
 //                sendAlertEmail(alert);
                 logger.info("Alert created and email sent for item: {} with price anomaly detected. Price difference: {} zł", item.getItemName(), priceDifference);
@@ -145,11 +127,11 @@ public class AlertService {
 
     private void sendAlertEmail(Alert alert) {
         String decodedItemName = decodeItemName(alert.getItem().getItemName());
-        Email from = new Email(emailSource);
-        Email to = new Email(emailDestination);
+        Email from = new Email(alertProperties.getEmailSource());
+        Email to = new Email(alertProperties.getEmailDestination());
         String subject = "Price Alert for " + decodedItemName;
 
-        String itemUrl = String.format("https://steamcommunity.com/market/listings/%d/%s", appid, URLEncoder.encode(decodedItemName, StandardCharsets.UTF_8).replace("+", "%20"));
+        String itemUrl = String.format("https://steamcommunity.com/market/listings/%d/%s", steamProperties.getAppId(), URLEncoder.encode(decodedItemName, StandardCharsets.UTF_8).replace("+", "%20"));
 
         String emailContent = String.format("A price drop has been detected for %s. Price gap: %d%%. See more details: %s",
                 decodedItemName, alert.getPriceGap(), itemUrl);
@@ -157,7 +139,7 @@ public class AlertService {
         Content content = new Content("text/plain", emailContent);
         Mail mail = new Mail(from, subject, to, content);
 
-        SendGrid sg = new SendGrid(sendgridApiKey);
+        SendGrid sg = new SendGrid(alertProperties.getApiKey());
         Request request = new Request();
         try {
             request.setMethod(Method.POST);
@@ -177,9 +159,9 @@ public class AlertService {
     public URI constructURI(String marketHashName) throws Exception {
         String decodedMarketHashName = URLDecoder.decode(marketHashName, StandardCharsets.UTF_8);
         String encodedMarketHashName = URLEncoder.encode(decodedMarketHashName, StandardCharsets.UTF_8);
-        String baseUrl = "https://steamcommunity.com/market/priceoverview/";
-        String queryString = String.format("?country=%s&currency=%d&appid=%d&market_hash_name=%s",
-                country, currency, appid, encodedMarketHashName);
+        String baseUrl = steamProperties.getBaseUrl();
+        String queryString = String.format("?country=%s&currency=%s&appid=%d&market_hash_name=%s",
+                steamProperties.getCountry(), steamProperties.getCurrency(), steamProperties.getAppId(), encodedMarketHashName);
         return new URI(baseUrl + queryString);
     }
 
@@ -200,5 +182,4 @@ public class AlertService {
         priceStr = priceStr.replaceAll("zł", "").trim().replace(",", ".");
         return Double.parseDouble(priceStr);
     }
-
 }
