@@ -4,6 +4,7 @@ import com.steampromo.steamz.items.repository.ItemRepository;
 import com.steampromo.steamz.items.repository.ItemRepositoryImplementation;
 import com.steampromo.steamz.items.service.ItemFacade;
 import com.steampromo.steamz.items.service.ItemService;
+import com.steampromo.steamz.proxy.ProxyService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,8 +22,9 @@ public class ItemConfiguration {
     public ItemService itemService(
             @Qualifier("itemRepository") ItemRepository itemRepository,
             SteamProperties steamProperties,
-            ItemProperties itemProperties) {
-        return new ItemService(itemRepository, steamProperties, itemProperties);
+            ItemProperties itemProperties,
+            ProxyService proxyService) {
+        return new ItemService(itemRepository, steamProperties, itemProperties, proxyService);
     }
 
     @Bean
