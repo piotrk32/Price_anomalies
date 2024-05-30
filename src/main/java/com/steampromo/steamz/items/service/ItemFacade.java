@@ -2,8 +2,6 @@ package com.steampromo.steamz.items.service;
 
 import com.steampromo.steamz.items.domain.Item;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,8 +9,6 @@ import org.springframework.stereotype.Component;
 public class ItemFacade {
 
     private final ItemService itemService;
-    private static final Logger logger = LoggerFactory.getLogger(ItemFacade.class);
-
     public void saveAllItemsData() {
         itemService.saveAllItemsData();
     }
