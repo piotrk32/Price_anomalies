@@ -167,7 +167,7 @@ public class AlertService {
 
     private Alert createAlert(Item item, double dbLowestPrice, double latestPrice) {
         Alert alert = new Alert();
-        alert.setId(UUID.randomUUID()); // Ensure the UUID is generated and set here
+        alert.setId(UUID.randomUUID());
         alert.setItem(item);
         alert.setDate(LocalDateTime.now());
 
