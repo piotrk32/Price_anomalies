@@ -48,7 +48,7 @@ public class ItemService {
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final ExecutorService executorService = Executors.newFixedThreadPool(10); // Executor service for concurrent execution
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private final SteamProperties steamProperties;
     private final ItemProperties itemProperties;
     private final ProxyService proxyService;
