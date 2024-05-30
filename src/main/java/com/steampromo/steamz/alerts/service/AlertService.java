@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -52,24 +51,26 @@ public class AlertService {
 
     @Value("${sendgrid.api-key}")
     private String sendgridApiKey;
-
     @Value("${mail.emailSource}")
     private String emailSource;
     @Value("${mail.emailDestination}")
     private String emailDestination;
-
     @Value("${steam.api.country}")
     private String country;
-
     @Value("${steam.api.currency}")
     private int currency;
-
     @Value("${steam.api.appid}")
     private int appid;
+    @Value("${app.alertRateLimit.retries}")
+    private int retries;
+    @Value("${app.alertRateLimit.maxRetries}")
+    private int maxRetries;
+    @Value("${app.alertRateLimit.retryDelay}")
+    private long retryDelay;
+
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
-
 
     public void checkPriceAnomaliesForCases() {
         try {
@@ -84,10 +85,6 @@ public class AlertService {
     }
 
     private void processItemPriceCheck(Item item) {
-        int retries = 0;
-        int maxRetries = 3;
-        long retryDelay = 500;
-
         while (retries <= maxRetries) {
             try {
                 URI uri = constructURI(item.getItemName());

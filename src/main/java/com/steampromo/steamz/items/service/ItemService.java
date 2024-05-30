@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 public class ItemService {
 
     private final ItemRepository itemRepository;
-
     private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -41,15 +40,20 @@ public class ItemService {
 
     @Value("${steam.api.base-url}")
     private String baseUrl;
-
     @Value("${steam.api.country}")
     private String country;
-
     @Value("${steam.api.currency}")
     private int currency;
-
     @Value("${steam.api.appid}")
     private int appid;
+
+    @Value("${app.itemRateLimit.attempts}")
+    private int attempts;
+    @Value("${app.itemRateLimit.maxAttempts}")
+    private int maxAttempts;
+    @Value("${app.itemRateLimit.waitTimeInMillis}")
+    private int waitTimeInMillis;
+
     public void saveAllItemsData() {
         List<String> marketHashNames = MarketHashCaseNameHolder.getMarketHashNames();
         int delay = 0;
@@ -66,10 +70,6 @@ public class ItemService {
     }
 
     public Item saveSingleItemData(String marketHashName) {
-        int attempts = 0;
-        int maxAttempts = 5;
-        long waitTimeInMillis = 3000;
-
         while (attempts < maxAttempts) {
             try {
                 URI uri = constructURI(marketHashName);
