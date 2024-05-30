@@ -2,6 +2,9 @@ package com.steampromo.steamz.items.configuration;
 
 import com.steampromo.steamz.items.repository.ItemRepository;
 import com.steampromo.steamz.items.repository.ItemRepositoryImplementation;
+import com.steampromo.steamz.items.service.ItemFacade;
+import com.steampromo.steamz.items.service.ItemService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -9,9 +12,22 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class ItemConfiguration {
 
-    @Bean
-    ItemRepository itemRepository(JdbcTemplate jdbcTemplate) {
+    @Bean(name = "itemRepository")
+    public ItemRepository itemRepository(JdbcTemplate jdbcTemplate) {
         return new ItemRepositoryImplementation(jdbcTemplate);
+    }
+
+    @Bean
+    public ItemService itemService(
+            @Qualifier("itemRepository") ItemRepository itemRepository,
+            SteamProperties steamProperties,
+            ItemProperties itemProperties) {
+        return new ItemService(itemRepository, steamProperties, itemProperties);
+    }
+
+    @Bean
+    public ItemFacade itemFacade(ItemService itemService) {
+        return new ItemFacade(itemService);
     }
 }
 
