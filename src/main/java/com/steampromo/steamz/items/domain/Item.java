@@ -48,4 +48,7 @@ public class Item {
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Alert> alerts;
+
+    @Column(name = "disabled", nullable = false)
+    private boolean disabled;
 }

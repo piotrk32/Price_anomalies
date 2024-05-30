@@ -136,7 +136,14 @@ public class ItemService {
         } else {
             logger.error("Failed to fetch data for marketHashName: {}. HTTP Status: {}, Response Body: {}", marketHashName, responseEntity.getStatusCode(), responseBody);
         }
+
+        // Disable the item on failure
+        disableItem(marketHashName);
         return false;
+    }
+
+    private void disableItem(String marketHashName) {
+        itemRepository.disableItem(marketHashName);
     }
 
     private void saveItem(PriceOverviewResponse response, String marketHashName) {

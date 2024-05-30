@@ -18,6 +18,8 @@ public interface ItemRepository  {
     void updateItem(Item item, PriceOverviewResponse response);
     void insertNewItem(Item item);
 
+    void disableItem(String itemName);
+
 
 
 

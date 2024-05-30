@@ -53,10 +53,19 @@ public class ItemRepositoryImplementation implements ItemRepository {
         item.setLowestPrice(rs.getDouble("lowest_price"));
         item.setMedianPrice(rs.getDouble("median_price"));
         item.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+        item.setDisabled(rs.getBoolean("disabled"));
+
+
         return item;
     }
     private double parsePrice(String price) {
         return Double.parseDouble(price.replaceAll("[^\\d,\\.]", "").replace(",", "."));
+    }
+
+    @Override
+    public void disableItem(String itemName) {
+        String sql = "UPDATE items SET disabled = TRUE WHERE item_name = ?";
+        jdbcTemplate.update(sql, itemName);
     }
 
 
